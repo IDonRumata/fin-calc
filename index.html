@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Investment Calculator</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f5f6fa;
+  --bg-card: #ffffff;
+  --bg-input: #eef0f5;
+  --text: #1b2a4a;
+  --text2: #5a6a85;
+  --text3: #99a4b8;
+  --accent: #0ea47a;
+  --accent-light: rgba(14,164,122,0.08);
+  --accent-glow: rgba(14,164,122,0.25);
+  --grad1: #0f2027;
+  --grad2: #1a3a4a;
+  --grad3: #0ea47a;
+  --invested: #8896ab;
+  --border: #e2e6ed;
+  --green: #0ea47a;
+  --red: #e74c3c;
+  --shadow: 0 1px 3px rgba(27,42,74,0.04);
+  --R: 14px;
+  --Rs: 10px;
+  --Rx: 8px;
+  --font: -apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --T: .2s cubic-bezier(.4,0,.2,1);
+}
+.dark {
+  --bg: #0d1117; --bg-card: #1c2333; --bg-input: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #545d68;
+  --border: #2a3340; --shadow: 0 1px 3px rgba(0,0,0,.15);
+  --invested: #6a7a90;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom,20px);min-height:100vh}
+.c{max-width:480px;margin:0 auto;padding:0 16px 32px}
+
+/* Header */
+.hdr{text-align:center;padding:20px 0 14px}
+.hdr h1{font-size:17px;font-weight:700;letter-spacing:1.5px}
+.hdr p{font-size:12px;color:var(--text3)}
+.lang{display:flex;justify-content:flex-end;gap:4px;padding-top:8px}
+.lang button{padding:3px 10px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:var(--T)}
+.lang button.on{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+
+/* Presets */
+.pre{display:flex;gap:6px;overflow-x:auto;padding:0 0 12px;scrollbar-width:none}
+.pre::-webkit-scrollbar{display:none}
+.pre button{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;transition:var(--T);white-space:nowrap;font-family:var(--font)}
+.pre button:active,.pre button.on{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+
+/* Card */
+.cd{background:var(--bg-card);border-radius:var(--R);padding:18px;margin-bottom:10px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.cd-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:14px}
+
+/* Currency */
+.cur{display:flex;align-items:center;gap:10px}
+.cur label{font-size:13px;font-weight:500;color:var(--text2);flex-shrink:0}
+.cur select{flex:1;padding:9px 32px 9px 12px;border-radius:var(--Rx);border:1.5px solid var(--border);background:var(--bg-input);color:var(--text);font-size:14px;font-family:var(--font);font-weight:500;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='%2399a4b8'%3E%3Cpath d='M0 0l5 6 5-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;transition:var(--T)}
+.cur select:focus{outline:none;border-color:var(--accent)}
+
+/* Inputs */
+.ig{margin-bottom:18px}
+.ig:last-child{margin-bottom:0}
+.il{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.il span{font-size:13px;font-weight:500;color:var(--text2)}
+.badge{font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-light);padding:2px 9px;border-radius:10px}
+.ifr{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pfx{font-size:14px;font-weight:600;color:var(--text3);width:20px;text-align:center;flex-shrink:0}
+.inp{flex:1;padding:9px 12px;border-radius:var(--Rx);border:1.5px solid var(--border);background:var(--bg-input);color:var(--text);font-size:15px;font-weight:500;font-family:var(--font);transition:var(--T);width:100%}
+.inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light)}
+
+/* Slider */
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:var(--border);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--bg-card);box-shadow:0 1px 6px var(--accent-glow);cursor:pointer;transition:transform .15s ease}
+input[type=range]::-webkit-slider-thumb:active{transform:scale(1.15)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--bg-card);box-shadow:0 1px 6px var(--accent-glow);cursor:pointer}
+
+/* Toggle */
+.tg{display:flex;border-radius:var(--Rx);overflow:hidden;border:1.5px solid var(--border);margin-top:6px}
+.tg button{flex:1;padding:6px 0;text-align:center;font-size:12px;font-weight:500;background:var(--bg-input);color:var(--text3);cursor:pointer;border:none;transition:var(--T);font-family:var(--font);border-right:1px solid var(--border)}
+.tg button:last-child{border-right:none}
+.tg button.on{background:var(--accent);color:#fff;font-weight:600}
+
+/* Term */
+.tv{text-align:center;margin-bottom:8px}
+.tv-n{font-size:28px;font-weight:800;color:var(--accent);line-height:1}
+.tv-l{font-size:13px;color:var(--text3);margin-top:2px}
+
+/* Result card */
+.res{background:linear-gradient(135deg,var(--grad1) 0%,var(--grad2) 50%,var(--grad3) 100%);border:none;color:#fff;text-align:center;position:relative;overflow:hidden;box-shadow:0 8px 40px rgba(15,32,39,.2)}
+.res::before{content:'';position:absolute;top:-50%;right:-30%;width:250px;height:250px;border-radius:50%;background:rgba(14,164,122,.08);pointer-events:none}
+.res-label{font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:4px}
+.res-total{font-size:34px;font-weight:800;letter-spacing:-.5px;margin-bottom:16px;position:relative;z-index:1}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative;z-index:1}
+.res-box{background:rgba(255,255,255,.08);border-radius:var(--Rs);padding:12px 10px;border:1px solid rgba(255,255,255,.06)}
+.res-box-label{font-size:10px;opacity:.6;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.res-box-val{font-size:15px;font-weight:700}
+
+/* Chart */
+.chart-wrap{height:220px;margin-top:4px}
+
+/* Compare */
+.cmp-hint{font-size:12px;color:var(--text3);text-align:center;margin-bottom:12px;line-height:1.4}
+.cmp-grid{display:grid;grid-template-columns:1fr 32px 1fr;gap:8px;align-items:center}
+.cmp-col{text-align:center}
+.cmp-col-label{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.cmp-col-val{font-size:17px;font-weight:800;color:var(--text)}
+.cmp-vs{font-size:10px;color:var(--text3);font-weight:800;text-align:center}
+.cmp-diff{text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;font-weight:700}
+.cmp-actions{display:flex;gap:8px;margin-top:12px}
+.cmp-actions button{flex:1;padding:9px;border-radius:var(--Rx);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:var(--T)}
+.btn-a{background:var(--accent);color:#fff;border:none}
+.btn-r{background:transparent;color:var(--text3);border:1.5px solid var(--border)}
+
+/* Disclaimer */
+.disc{margin-top:10px;padding:10px 12px;border-radius:var(--Rx);background:var(--accent-light);border-left:3px solid var(--accent);font-size:11px;color:var(--text2);line-height:1.5;display:none}
+.disc.vis{display:block}
+
+/* Footer */
+.ft{text-align:center;padding:20px 0 8px;font-size:11px;color:var(--text3)}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fi{animation:fadeIn .35s ease both}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="c">
+
+  <div class="lang">
+    <button class="on" onclick="setLang('ru')" id="lRu">RU</button>
+    <button onclick="setLang('en')" id="lEn">EN</button>
+  </div>
+
+  <div class="hdr fi">
+    <h1 id="hT">КАЛЬКУЛЯТОР ИНВЕСТОРА</h1>
+    <p id="hS">Рассчитайте доходность ваших инвестиций</p>
+  </div>
+
+  <div class="pre fi" style="animation-delay:.04s">
+    <button data-p="start" onclick="preset('start')"><span data-t="pStart">Старт</span></button>
+    <button data-p="mid" onclick="preset('mid')"><span data-t="pMid">Средний</span></button>
+    <button data-p="aggr" onclick="preset('aggr')"><span data-t="pAggr">Агрессивный</span></button>
+    <button data-p="robot" onclick="preset('robot')"><span data-t="pRobot">С роботом</span></button>
+  </div>
+
+  <div class="cd fi" style="animation-delay:.08s">
+    <div class="cur">
+      <label id="cL">Валюта</label>
+      <select id="cSel" onchange="state.currency=this.value;haptic();calc()">
+        <option value="USD">$ Доллар (USD)</option>
+        <option value="EUR">&euro; Евро (EUR)</option>
+        <option value="BYN">Br Бел. рубль (BYN)</option>
+        <option value="RUB">&#x20bd; Рос. рубль (RUB)</option>
+        <option value="UAH">&#x20b4; Гривна (UAH)</option>
+        <option value="PLN">z&#x142; Злотый (PLN)</option>
+        <option value="KZT">&#x20b8; Тенге (KZT)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="cd fi" style="animation-delay:.12s">
+    <div class="cd-label" id="pLabel">ПАРАМЕТРЫ</div>
+
+    <div class="ig">
+      <div class="il"><span data-t="lInit">Стартовая сумма</span><span class="badge" id="bInit">$200</span></div>
+      <div class="ifr"><span class="pfx" id="px1">$</span><input class="inp" type="number" id="iInit" value="200" min="0" max="1000000" step="100" inputmode="numeric"></div>
+      <input type="range" id="sInit" min="0" max="1000000" step="100" value="200">
+    </div>
+
+    <div class="ig">
+      <div class="il"><span data-t="lCont">Пополнение</span><span class="badge" id="bCont">$50</span></div>
+      <div class="ifr"><span class="pfx" id="px2">$</span><input class="inp" type="number" id="iCont" value="50" min="0" max="100000" step="10" inputmode="numeric"></div>
+      <input type="range" id="sCont" min="0" max="100000" step="10" value="50">
+      <div class="tg" id="cfG">
+        <button data-v="day" onclick="setFreq('cf','day')"><span data-t="fDay">День</span></button>
+        <button data-v="month" class="on" onclick="setFreq('cf','month')"><span data-t="fMon">Месяц</span></button>
+        <button data-v="year" onclick="setFreq('cf','year')"><span data-t="fYr">Год</span></button>
+      </div>
+    </div>
+
+    <div class="ig">
+      <div class="il"><span data-t="lRate">Доходность</span><span class="badge" id="bRate">10%</span></div>
+      <div class="ifr"><span class="pfx">%</span><input class="inp" type="number" id="iRate" value="10" min="0" max="100" step="0.5" inputmode="decimal"></div>
+      <input type="range" id="sRate" min="0" max="100" step="0.5" value="10">
+      <div class="tg" id="rfG">
+        <button data-v="day" onclick="setFreq('rf','day')"><span data-t="fDay">День</span></button>
+        <button data-v="month" onclick="setFreq('rf','month')"><span data-t="fMon">Месяц</span></button>
+        <button data-v="year" class="on" onclick="setFreq('rf','year')"><span data-t="fYr">Год</span></button>
+      </div>
+    </div>
+
+    <div class="ig">
+      <div class="tv"><div class="tv-n" id="tV">10</div><div class="tv-l" id="tL">лет</div></div>
+      <input type="range" id="sTerm" min="1" max="50" step="1" value="10">
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="cd res fi" style="animation-delay:.16s">
+    <div class="res-label" data-t="rLabel">ИТОГО ЧЕРЕЗ <span id="rYrs">10</span> ЛЕТ</div>
+    <div class="res-total" id="rTotal">$0</div>
+    <div class="res-grid">
+      <div class="res-box"><div class="res-box-label" data-t="rInv">Вложено</div><div class="res-box-val" id="rInv">$0</div></div>
+      <div class="res-box"><div class="res-box-label" data-t="rEarn">Заработано на %</div><div class="res-box-val" id="rEarn">$0</div></div>
+    </div>
+  </div>
+
+  <div class="disc" id="disc">*5% в месяц — результат по Myfxbook за 2024. Прошлая доходность не гарантирует будущую.</div>
+
+  <!-- Chart: growth over years -->
+  <div class="cd fi" style="animation-delay:.2s">
+    <div class="cd-label" data-t="chTitle">РОСТ КАПИТАЛА</div>
+    <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+  </div>
+
+  <!-- Compare -->
+  <div class="cd fi" style="animation-delay:.24s">
+    <div class="cd-label" data-t="cmpTitle">СРАВНЕНИЕ СЦЕНАРИЕВ</div>
+    <div class="cmp-hint" id="cmpH" data-t="cmpHint">Зафиксируйте текущий результат, затем измените параметры</div>
+    <div class="cmp-grid">
+      <div class="cmp-col"><div class="cmp-col-label" data-t="scA">Сценарий A</div><div class="cmp-col-val" id="cA">&mdash;</div></div>
+      <div class="cmp-vs">VS</div>
+      <div class="cmp-col"><div class="cmp-col-label" data-t="scB">Текущий</div><div class="cmp-col-val" id="cB">&mdash;</div></div>
+    </div>
+    <div class="cmp-diff" id="cDiff" style="display:none"></div>
+    <div class="cmp-actions">
+      <button class="btn-a" id="btnA" onclick="saveA()" data-t="btnA">Зафиксировать A</button>
+      <button class="btn-r" onclick="resetCmp()" data-t="btnR">Сбросить</button>
+    </div>
+  </div>
+
+  <div class="ft">Финансовая Перезагрузка &copy; 2026</div>
+</div>
+
+<script>
+var S={initial:200,contrib:50,cf:'month',rate:10,rf:'year',term:10,currency:'USD',lang:'ru',scA:null};
+
+var CUR={
+  USD:{s:'$'},EUR:{s:'\u20ac'},BYN:{s:'Br'},RUB:{s:'\u20bd'},
+  UAH:{s:'\u20b4'},PLN:{s:'z\u0142'},KZT:{s:'\u20b8'}
+};
+
+var L={
+  ru:{
+    hT:'КАЛЬКУЛЯТОР ИНВЕСТОРА',hS:'Рассчитайте доходность ваших инвестиций',
+    pStart:'Старт',pMid:'Средний',pAggr:'Агрессивный',pRobot:'С роботом',
+    cL:'Валюта',pLabel:'ПАРАМЕТРЫ',
+    lInit:'Стартовая сумма',lCont:'Пополнение',lRate:'Доходность',
+    fDay:'День',fMon:'Месяц',fYr:'Год',tL:'лет',
+    rLabel:'ИТОГО ЧЕРЕЗ',rSfx:'ЛЕТ',rInv:'Вложено',rEarn:'Заработано на %',
+    chTitle:'РОСТ КАПИТАЛА',chInv:'Вложения',chTotal:'Итого с процентами',
+    cmpTitle:'СРАВНЕНИЕ СЦЕНАРИЕВ',cmpHint:'Зафиксируйте текущий результат, затем измените параметры',
+    scA:'Сценарий A',scB:'Текущий',btnA:'Зафиксировать A',btnR:'Сбросить',
+    disc:'*5% в месяц \u2014 результат по Myfxbook за 2024. Прошлая доходность не гарантирует будущую.',
+    co:{USD:'$ Доллар (USD)',EUR:'\u20ac Евро (EUR)',BYN:'Br Бел. рубль (BYN)',RUB:'\u20bd Рос. рубль (RUB)',UAH:'\u20b4 Гривна (UAH)',PLN:'z\u0142 Злотый (PLN)',KZT:'\u20b8 Тенге (KZT)'}
+  },
+  en:{
+    hT:'INVESTMENT CALCULATOR',hS:'Calculate the return on your investments',
+    pStart:'Starter',pMid:'Medium',pAggr:'Aggressive',pRobot:'With Bot',
+    cL:'Currency',pLabel:'PARAMETERS',
+    lInit:'Initial amount',lCont:'Contribution',lRate:'Return rate',
+    fDay:'Day',fMon:'Month',fYr:'Year',tL:'years',
+    rLabel:'TOTAL AFTER',rSfx:'YEARS',rInv:'Invested',rEarn:'Earned from interest',
+    chTitle:'CAPITAL GROWTH',chInv:'Invested',chTotal:'Total with interest',
+    cmpTitle:'COMPARE SCENARIOS',cmpHint:'Save current result, then change parameters to compare',
+    scA:'Scenario A',scB:'Current',btnA:'Save as A',btnR:'Reset',
+    disc:'*5% monthly \u2014 Myfxbook result for 2024. Past returns do not guarantee future results.',
+    co:{USD:'$ Dollar (USD)',EUR:'\u20ac Euro (EUR)',BYN:'Br Bel. Ruble (BYN)',RUB:'\u20bd Ruble (RUB)',UAH:'\u20b4 Hryvnia (UAH)',PLN:'z\u0142 Zloty (PLN)',KZT:'\u20b8 Tenge (KZT)'}
+  }
+};
+
+function t(k){return(L[S.lang]&&L[S.lang][k])||L.ru[k]||k}
+
+/* Telegram */
+var tg=null;
+try{
+  tg=window.Telegram&&window.Telegram.WebApp;
+  if(tg){
+    tg.ready();tg.expand();
+    if(tg.colorScheme==='dark')document.body.classList.add('dark');
+    var ul=tg.initDataUnsafe&&tg.initDataUnsafe.user&&tg.initDataUnsafe.user.language_code;
+    if(ul){
+      if(['ru','be','kk'].indexOf(ul)!==-1){S.lang='ru';S.currency=ul==='be'?'BYN':ul==='kk'?'KZT':'RUB'}
+      else if(ul==='uk'){S.lang='ru';S.currency='UAH'}
+      else if(ul==='pl'){S.lang='en';S.currency='PLN'}
+      else{S.lang='en';S.currency='USD'}
+    }
+    tg.onEvent('themeChanged',function(){
+      document.body.classList.toggle('dark',tg.colorScheme==='dark');
+      updChartColors();
+    });
+  }
+}catch(e){}
+if(!tg||!tg.colorScheme){
+  if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.body.classList.add('dark');
+  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(e){document.body.classList.toggle('dark',e.matches);updChartColors()});
+}
+
+function haptic(){try{if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred('light')}catch(e){}}
+
+/* Format */
+function fN(n){var v=parseFloat(n);if(isNaN(v))return'0';return CUR[S.currency].s==='$'?v.toLocaleString('en-US',{maximumFractionDigits:0}):v.toLocaleString('ru-RU',{maximumFractionDigits:0})}
+function fM(n){var c=CUR[S.currency];var f=fN(n);return(c.s==='$'||c.s==='\u20ac')?c.s+f:f+' '+c.s}
+function fMs(n){var c=CUR[S.currency];var a=Math.abs(n);var s;if(a>=1e6)s=(n/1e6).toFixed(1)+'M';else if(a>=1e3)s=(n/1e3).toFixed(0)+'K';else s=n.toFixed(0);return(c.s==='$'||c.s==='\u20ac')?c.s+s:s+c.s}
+
+/* Calculation */
+function compute(){
+  var P=parseFloat(S.initial)||0,rr=parseFloat(S.rate)||0,rc=parseFloat(S.contrib)||0;
+  var yrs=parseInt(S.term)||1,n=yrs*12;
+  var mr;
+  if(S.rf==='day')mr=(rr/100)*30;
+  else if(S.rf==='month')mr=rr/100;
+  else mr=Math.pow(1+rr/100,1/12)-1;
+  var mc;
+  if(S.cf==='day')mc=rc*30;
+  else if(S.cf==='year')mc=rc/12;
+  else mc=rc;
+  var fv;
+  if(mr===0)fv=P+mc*n;
+  else{var cf=Math.pow(1+mr,n);fv=P*cf+mc*((cf-1)/mr)}
+  var inv=P+mc*n,earn=fv-inv;
+  var yearly=[],bal=P;
+  for(var y=1;y<=yrs;y++){var iby=P+mc*12*y;for(var m=0;m<12;m++)bal=bal*(1+mr)+mc;yearly.push({y:y,inv:iby,tot:bal})}
+  return{fv:fv,inv:inv,earn:earn,pct:fv>0?earn/fv*100:0,yearly:yearly};
+}
+
+/* Chart */
+var chart=null;
+function chartTxtColor(){return document.body.classList.contains('dark')?'#8b949e':'#99a4b8'}
+function chartGridColor(){return document.body.classList.contains('dark')?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)'}
+
+function initChart(){
+  var ctx=document.getElementById('mainChart');
+  if(!ctx)return;
+  Chart.defaults.font.family=getComputedStyle(document.body).fontFamily;
+  chart=new Chart(ctx.getContext('2d'),{
+    type:'line',
+    data:{
+      labels:[],
+      datasets:[
+        {label:t('chTotal'),data:[],backgroundColor:'rgba(14,164,122,.15)',borderColor:'#0ea47a',borderWidth:2.5,fill:true,tension:.35,pointRadius:0,pointHitRadius:12,order:1},
+        {label:t('chInv'),data:[],backgroundColor:'rgba(136,150,171,.12)',borderColor:'#8896ab',borderWidth:2,fill:true,tension:.35,pointRadius:0,pointHitRadius:12,order:2}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{grid:{display:false},ticks:{color:chartTxtColor(),font:{size:10}}},
+        y:{grid:{color:chartGridColor()},ticks:{color:chartTxtColor(),font:{size:10},callback:function(v){return fMs(v)}},beginAtZero:true}
+      },
+      plugins:{
+        legend:{display:true,position:'bottom',labels:{usePointStyle:true,pointStyle:'circle',padding:16,font:{size:11},color:chartTxtColor()}},
+        tooltip:{backgroundColor:'rgba(15,32,39,.92)',titleFont:{size:11},bodyFont:{size:11},padding:10,cornerRadius:8,callbacks:{label:function(c){return c.dataset.label+': '+fM(Math.round(c.raw))}}}
+      },
+      animation:{duration:500,easing:'easeOutQuart'}
+    }
+  });
+}
+
+function updChartColors(){
+  if(!chart)return;
+  chart.options.scales.x.ticks.color=chartTxtColor();
+  chart.options.scales.y.ticks.color=chartTxtColor();
+  chart.options.scales.y.grid.color=chartGridColor();
+  chart.options.plugins.legend.labels.color=chartTxtColor();
+  chart.update('none');
+}
+
+/* Counter animation */
+var af=null;
+function animCount(el,target){
+  if(af)cancelAnimationFrame(af);
+  var start=parseFloat(el.dataset.cur||'0'),t0=performance.now();
+  function tick(now){
+    var p=Math.min((now-t0)/400,1);
+    var e=1-Math.pow(1-p,3);
+    var v=start+(target-start)*e;
+    el.textContent=fM(Math.round(v));el.dataset.cur=v;
+    if(p<1)af=requestAnimationFrame(tick);
+    else{el.textContent=fM(Math.round(target));el.dataset.cur=target}
+  }
+  af=requestAnimationFrame(tick);
+}
+
+/* Main update */
+function calc(){
+  var r=compute(),sym=CUR[S.currency].s;
+  document.getElementById('bInit').textContent=fM(S.initial);
+  document.getElementById('bCont').textContent=fM(S.contrib);
+  document.getElementById('bRate').textContent=S.rate+'%';
+  document.getElementById('px1').textContent=sym;
+  document.getElementById('px2').textContent=sym;
+  document.getElementById('tV').textContent=S.term;
+  document.getElementById('rYrs').textContent=S.term;
+  animCount(document.getElementById('rTotal'),Math.round(r.fv));
+  document.getElementById('rInv').textContent=fM(Math.round(r.inv));
+  document.getElementById('rEarn').textContent=fM(Math.round(r.earn));
+
+  /* Chart */
+  if(chart){
+    chart.data.labels=r.yearly.map(function(y){return y.y});
+    chart.data.datasets[0].data=r.yearly.map(function(y){return Math.round(y.tot)});
+    chart.data.datasets[0].label=t('chTotal');
+    chart.data.datasets[1].data=r.yearly.map(function(y){return Math.round(y.inv)});
+    chart.data.datasets[1].label=t('chInv');
+    chart.update();
+  }
+
+  /* Compare */
+  if(S.scA){
+    document.getElementById('cA').textContent=S.scA.label;
+    document.getElementById('cB').textContent=fM(Math.round(r.fv));
+    var d=r.fv-S.scA.fv,dp=S.scA.fv>0?d/S.scA.fv*100:0,sg=d>=0?'+':'';
+    var de=document.getElementById('cDiff');
+    de.textContent=sg+fM(Math.round(d))+' ('+sg+dp.toFixed(1)+'%)';
+    de.style.color=d>=0?'var(--green)':'var(--red)';
+    de.style.display='block';
+  }else{
+    document.getElementById('cB').innerHTML='&mdash;';
+    document.getElementById('cDiff').style.display='none';
+  }
+}
+
+/* Compare */
+function saveA(){
+  var r=compute();
+  S.scA={fv:r.fv,label:fM(Math.round(r.fv))};
+  document.getElementById('cA').textContent=S.scA.label;
+  document.getElementById('btnA').textContent=S.lang==='ru'?'Обновить A':'Update A';
+  haptic();calc();
+}
+function resetCmp(){
+  S.scA=null;
+  document.getElementById('cA').innerHTML='&mdash;';
+  document.getElementById('cDiff').style.display='none';
+  document.getElementById('btnA').textContent=t('btnA');
+  haptic();calc();
+}
+
+/* Slider sync */
+function link(iid,sid){
+  var i=document.getElementById(iid),s=document.getElementById(sid);
+  i.addEventListener('input',function(){var v=parseFloat(this.value)||0;v=Math.max(+s.min,Math.min(+s.max,v));s.value=v;upd(iid,v)});
+  s.addEventListener('input',function(){var v=parseFloat(this.value);i.value=v;upd(iid,v);haptic()});
+}
+function upd(id,v){
+  if(id==='iInit')S.initial=v;else if(id==='iCont')S.contrib=v;else if(id==='iRate')S.rate=v;
+  clrPre();calc();
+}
+function clrPre(){var b=document.querySelectorAll('.pre button');for(var i=0;i<b.length;i++)b[i].classList.remove('on')}
+
+/* Freq toggles */
+function setFreq(which,val){
+  if(which==='cf')S.cf=val;else S.rf=val;
+  var gid=which==='cf'?'cfG':'rfG';
+  var btns=document.querySelectorAll('#'+gid+' button');
+  for(var i=0;i<btns.length;i++)btns[i].classList.toggle('on',btns[i].dataset.v===val);
+  haptic();clrPre();calc();
+}
+
+/* Presets */
+var PRE={
+  start:{i:0,c:50,cf:'month',r:10,rf:'year',t:10},
+  mid:{i:1000,c:200,cf:'month',r:12,rf:'year',t:15},
+  aggr:{i:5000,c:500,cf:'month',r:20,rf:'year',t:10},
+  robot:{i:200,c:100,cf:'month',r:5,rf:'month',t:5}
+};
+function preset(k){
+  var p=PRE[k];
+  S.initial=p.i;S.contrib=p.c;S.cf=p.cf;S.rate=p.r;S.rf=p.rf;S.term=p.t;
+  document.getElementById('iInit').value=p.i;document.getElementById('sInit').value=p.i;
+  document.getElementById('iCont').value=p.c;document.getElementById('sCont').value=p.c;
+  document.getElementById('iRate').value=p.r;document.getElementById('sRate').value=p.r;
+  document.getElementById('sTerm').value=p.t;
+  setFreq('cf',p.cf);setFreq('rf',p.rf);
+  var btns=document.querySelectorAll('.pre button');
+  for(var i=0;i<btns.length;i++)btns[i].classList.toggle('on',btns[i].dataset.p===k);
+  document.getElementById('disc').classList.toggle('vis',k==='robot');
+  haptic();calc();
+}
+
+/* Language */
+function setLang(lang){
+  S.lang=lang;
+  document.getElementById('lRu').classList.toggle('on',lang==='ru');
+  document.getElementById('lEn').classList.toggle('on',lang==='en');
+  document.documentElement.lang=lang==='ru'?'ru':'en';
+  document.getElementById('hT').textContent=t('hT');
+  document.getElementById('hS').textContent=t('hS');
+  document.getElementById('cL').textContent=t('cL');
+  document.getElementById('pLabel').textContent=t('pLabel');
+  document.getElementById('tL').textContent=t('tL');
+  document.getElementById('disc').textContent=t('disc');
+  var els=document.querySelectorAll('[data-t]');
+  for(var i=0;i<els.length;i++){
+    var k=els[i].getAttribute('data-t');
+    if(k==='rLabel')els[i].innerHTML=t('rLabel')+' <span id="rYrs">'+S.term+'</span> '+t('rSfx');
+    else if(L[lang]&&L[lang][k])els[i].textContent=L[lang][k];
+  }
+  var sel=document.getElementById('cSel'),opts=L[lang].co;
+  for(var j=0;j<sel.options.length;j++){var code=sel.options[j].value;if(opts[code])sel.options[j].textContent=opts[code]}
+  if(!S.scA)document.getElementById('btnA').textContent=t('btnA');
+  haptic();calc();
+}
+
+/* Init */
+document.addEventListener('DOMContentLoaded',function(){
+  link('iInit','sInit');link('iCont','sCont');link('iRate','sRate');
+  document.getElementById('sTerm').addEventListener('input',function(){S.term=parseInt(this.value)||1;clrPre();haptic();calc()});
+  document.getElementById('cSel').value=S.currency;
+  document.getElementById('lRu').classList.toggle('on',S.lang==='ru');
+  document.getElementById('lEn').classList.toggle('on',S.lang==='en');
+  setLang(S.lang);
+  initChart();
+  calc();
+});
+</script>
+</body>
+</html>
